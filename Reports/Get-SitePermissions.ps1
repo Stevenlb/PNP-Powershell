@@ -126,10 +126,9 @@ Function Get-SitePermissions()
         #Get the Web
         $Web = Get-PnPWeb
   
-        Write-host -f Yellow "Getting Site Collection Administrators..."
+        Write-host -f Green "Getting SCAs"
         #Get Site Collection Administrators
         $SiteAdmins = Get-PnPSiteCollectionAdmin
-        Write-host log: Got admins
 		
         $SiteCollectionAdmins = ($SiteAdmins | Select -ExpandProperty Title) -join "; "
         #Add the Data to Object
@@ -151,11 +150,10 @@ $ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
         #Export Permissions to CSV File
 
         $Permissions | Export-CSV $ReportFile -NoTypeInformation
-Write-host "`t `t Getting Permissions for:"
         #Function to Get Permissions of Folders in a given List
         Function Get-PnPFolderPermission([Microsoft.SharePoint.Client.List]$List)
         {
-            Write-host "`t `t `t "$List.Title
+            Write-host "`t "$List.Title
              
             #Get All Folders from List
             $ListItems = Get-PnPListItem -List $List -PageSize 2000
@@ -181,7 +179,7 @@ Write-host "`t `t Getting Permissions for:"
                     }
                 }
                 $ItemCounter++
-                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting Permissions of Folders in List '$($List.Title)'" -Status "Processing Folder '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
+                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting permissions for items in '$($List.Title)'" -Status "Processing Folder '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
             }
         }
   
@@ -205,7 +203,7 @@ Write-host "`t `t Getting Permissions for:"
                 If($List.Hidden -eq $False -and $ExcludedLists -notcontains $List.Title)
                 {
                     $Counter++
-                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)' in $($Web.URL)" -Status "Processing Lists $Counter of $($Lists.Count)" -Id 1
+                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)'" -Status "Processing Lists $Counter of $($Lists.Count)" -Id 1
   
                     #Get Item Level Permissions if 'ScanFolders' switch present
                     If($ScanFolders)
@@ -237,11 +235,11 @@ Write-host "`t `t Getting Permissions for:"
         Function Get-PnPWebPermission([Microsoft.SharePoint.Client.Web]$Web)
         {
             #Call the function to Get permissions of the web
-            Write-host "Getting Permissions for $($Web.URL)"
+            Write-host -f Green "Getting Permissions for site."
             Get-PnPPermissions -Object $Web
     
             #Get List Permissions
-            Write-host -f Yellow "`t Getting Permissions of Lists and Libraries..."
+            Write-host -f Green "Getting Permissions of Lists and Libraries."
             Get-PnPListPermission($Web)
   
             #Recursively get permissions from all sub-webs based on the "Recursive" Switch
