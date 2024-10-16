@@ -179,7 +179,7 @@ $ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
                     }
                 }
                 $ItemCounter++
-                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting permissions for items in '$($List.Title)'" -Status "Processing Folder '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
+                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting permissions for items in '$($List.Title)'" -Status "Item: '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
             }
         }
   
@@ -203,7 +203,7 @@ $ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
                 If($List.Hidden -eq $False -and $ExcludedLists -notcontains $List.Title)
                 {
                     $Counter++
-                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)'" -Status "Processing Lists $Counter of $($Lists.Count)" -Id 1
+                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)'" -Status "List $Counter of $($Lists.Count)" -Id 1
   
                     #Get Item Level Permissions if 'ScanFolders' switch present
                     If($ScanFolders)
@@ -286,4 +286,4 @@ Write-Output "Script Run Time: $diff"
 }
 
  
-Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/PlanCP-QA-AHP" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/Site" -Recursive -ScanFolders -IncludeInheritedPermissions
