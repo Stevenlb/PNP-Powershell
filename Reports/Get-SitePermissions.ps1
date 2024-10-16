@@ -1,81 +1,63 @@
-#Call script with relative path variables
+# Load configuration from an external script file
 . .\config\scriptpaths.ps1
 
+# Create a 'Reports' directory in the script path, force creation if it already exists
 New-Item -ItemType Directory -Force -Path "$ScriptPath\Reports\"
+
+# Clear the console screen
 cls
 
-#Function to Get Permissions Applied on a particular Object, such as: Web, List or Folder
-	$StartTime = Get-Date
-	Write-Host "Script Start time is $StartTime"
-Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object)
-{
+# Record the start time of the script execution
+$StartTime = Get-Date
+Write-Host "Script Start time is $StartTime"
 
-
-
-
-
-	
-
-	
-    #Determine the type of the object
-    Switch($Object.TypedObject.ToString())
-    {
+# Function to get permissions applied on a particular SharePoint object (Web, List, or Folder)
+Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object) {
+    # Determine the type of the object and set relevant properties
+    Switch($Object.TypedObject.ToString()) {
         "Microsoft.SharePoint.Client.Web"  { $ObjectType = "Site" ; $ObjectURL = $Object.URL; $ObjectTitle = $Object.Title }
-        "Microsoft.SharePoint.Client.ListItem"
-        {
+        "Microsoft.SharePoint.Client.ListItem" {
             $ObjectType = "Folder"
-            #Get the URL of the Folder
+            # Get the Folder property of the ListItem
             $Folder = Get-PnPProperty -ClientObject $Object -Property Folder
             $ObjectTitle = $Object.Folder.Name
+            # Construct the full URL of the folder
             $ObjectURL = $("{0}{1}" -f $Web.Url.Replace($Web.ServerRelativeUrl,''),$Object.Folder.ServerRelativeUrl)
         }
-        Default
-        {
-            $ObjectType = $Object.BaseType #List, DocumentLibrary, etc
+        Default {
+            $ObjectType = $Object.BaseType
             $ObjectTitle = $Object.Title
-            #Get the URL of the List or Library
+            # Get the RootFolder property of the List
             $RootFolder = Get-PnPProperty -ClientObject $Object -Property RootFolder    
+            # Construct the full URL of the list
             $ObjectURL = $("{0}{1}" -f $Web.Url.Replace($Web.ServerRelativeUrl,''), $RootFolder.ServerRelativeUrl)
         }
     }
     
-    #Get permissions assigned to the object
+    # Get the HasUniqueRoleAssignments and RoleAssignments properties of the object
     Get-PnPProperty -ClientObject $Object -Property HasUniqueRoleAssignments, RoleAssignments
-  
-    #Check if Object has unique permissions
     $HasUniquePermissions = $Object.HasUniqueRoleAssignments
-      
-    #Loop through each permission assigned and extract details
+    
     $PermissionCollection = @()
-    Foreach($RoleAssignment in $Object.RoleAssignments)
-    {
-        #Get the Permission Levels assigned and Member
+    # Loop through each role assignment on the object
+    Foreach($RoleAssignment in $Object.RoleAssignments) {
+        # Get the RoleDefinitionBindings and Member properties of the role assignment
         Get-PnPProperty -ClientObject $RoleAssignment -Property RoleDefinitionBindings, Member
-  
-        #Get the Principal Type: User, SP Group, AD Group
         $PermissionType = $RoleAssignment.Member.PrincipalType
-     
-        #Get the Permission Levels assigned
-        $PermissionLevels = $RoleAssignment.RoleDefinitionBindings | Select -ExpandProperty Name
-  
-        #Remove Limited Access
-        $PermissionLevels = ($PermissionLevels | Where { $_ -ne "Limited Access"}) -join "; "
-  
-        #Leave Principals with no Permissions assigned
+        # Get the names of all permission levels assigned, excluding "Limited Access"
+        $PermissionLevels = ($RoleAssignment.RoleDefinitionBindings | Select -ExpandProperty Name | Where { $_ -ne "Limited Access"}) -join "; "
+        # Skip if no permissions are assigned
         If($PermissionLevels.Length -eq 0) {Continue}
-  
-        #Check if the Principal is SharePoint group
-        If($PermissionType -eq "SharePointGroup")
-        {
-            #Get Group Members
+        # Handle SharePoint groups differently from individual users
+        If($PermissionType -eq "SharePointGroup") {
+            # Get all members of the SharePoint group
             $GroupMembers = Get-PnPGroupMember -Identity $RoleAssignment.Member.LoginName
-                  
-            #Leave Empty Groups
+            # Skip empty groups
             If($GroupMembers.count -eq 0){Continue}
+            # Get titles of all group members except "System Account"
             $GroupUsers = ($GroupMembers | Select -ExpandProperty Title | Where { $_ -ne "System Account"}) -join "; "
             If($GroupUsers.Length -eq 0) {Continue}
- 
-            #Add the Data to Object
+            # Create a new object to store permission information for the group
             $Permissions = New-Object PSObject
             $Permissions | Add-Member NoteProperty Object($ObjectType)
             $Permissions | Add-Member NoteProperty Title($ObjectTitle)
@@ -87,9 +69,8 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
             $Permissions | Add-Member NoteProperty GrantedThrough("SharePoint Group: $($RoleAssignment.Member.LoginName)")
             $PermissionCollection += $Permissions
         }
-        Else #User
-        {
-            #Add the Data to Object
+        Else {
+            # Create a new object to store permission information for individual users
             $Permissions = New-Object PSObject
             $Permissions | Add-Member NoteProperty Object($ObjectType)
             $Permissions | Add-Member NoteProperty Title($ObjectTitle)
@@ -102,36 +83,30 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
             $PermissionCollection += $Permissions
         }
     }
-    #Export Permissions to CSV File
+    # Export the collected permissions to a CSV file, appending to existing data
     $PermissionCollection | Export-CSV $ReportFile -NoTypeInformation -Append
 }
-    
-#Function to get sharepoint online site permissions report
-Function Get-SitePermissions()
-{
+
+# Main function to get SharePoint Online site permissions report
+Function Get-SitePermissions() {
 [cmdletbinding()]
- 
-    Param 
-    (   
+    Param (   
         [Parameter(Mandatory=$false)] [String] $SiteURL,     
         [Parameter(Mandatory=$false)] [switch] $Recursive,
         [Parameter(Mandatory=$false)] [switch] $ScanFolders,
         [Parameter(Mandatory=$false)] [switch] $IncludeInheritedPermissions
     ) 
     Try {
-			$StartTime = Get-Date
-        #Connect to the Site
+        $StartTime = Get-Date
+        # Connect to the SharePoint Online site
         Connect-PnPOnline -Url $SiteUrl -ClientId c6d631cb-09f6-42e6-bd44-ab4daafd7acd -Interactive
-		
-        #Get the Web
+        # Get the Web object
         $Web = Get-PnPWeb
-  
         Write-host -f Green "Getting SCAs"
-        #Get Site Collection Administrators
+        # Get Site Collection Administrators
         $SiteAdmins = Get-PnPSiteCollectionAdmin
-		
         $SiteCollectionAdmins = ($SiteAdmins | Select -ExpandProperty Title) -join "; "
-        #Add the Data to Object
+        # Create a new object to store Site Collection Administrators information
         $Permissions = New-Object PSObject
         $Permissions | Add-Member NoteProperty Object("Site Collection")
         $Permissions | Add-Member NoteProperty Title($Web.Title)
@@ -141,149 +116,116 @@ Function Get-SitePermissions()
         $Permissions | Add-Member NoteProperty Type("Site Collection Administrators")
         $Permissions | Add-Member NoteProperty Permissions("Site Owner")
         $Permissions | Add-Member NoteProperty GrantedThrough("Direct Permissions")
-		
-                	$TimeStamp = Get-Date -Format "yyyyMMdd-HHmm"
-$ReportFile = $SiteURL -replace "https://ptportal.sharepoint.com/sites/", "$ScriptPath\Reports\"
-
-$ReportFile = $ReportFile -replace "/", ""
-$ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
-        #Export Permissions to CSV File
-
+        # Generate a timestamp for the report file name
+        $TimeStamp = Get-Date -Format "yyyyMMdd-HHmm"
+        # Construct the report file path
+        $ReportFile = $SiteURL -replace "https://ptportal.sharepoint.com/sites/", "$ScriptPath\Reports\"
+        $ReportFile = $ReportFile -replace "/", ""
+        $ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
+        # Export Site Collection Administrators information to the CSV file
         $Permissions | Export-CSV $ReportFile -NoTypeInformation
-        #Function to Get Permissions of Folders in a given List
-        Function Get-PnPFolderPermission([Microsoft.SharePoint.Client.List]$List)
-        {
+
+        # Function to get permissions of folders in a given list
+        Function Get-PnPFolderPermission([Microsoft.SharePoint.Client.List]$List) {
             Write-host "`t "$List.Title
-             
-            #Get All Folders from List
+            # Get all items from the list
             $ListItems = Get-PnPListItem -List $List -PageSize 2000
+            # Filter for folder items, excluding "Forms" folder and folders starting with "_"
             $Folders = $ListItems | Where { ($_.FileSystemObjectType -eq "Folder") -and ($_.FieldValues.FileLeafRef -ne "Forms") -and (-Not($_.FieldValues.FileLeafRef.StartsWith("_")))}
- 
             $ItemCounter = 0
-            #Loop through each Folder
-            ForEach($Folder in $Folders)
-            {
-                #Get Objects with Unique Permissions or Inherited Permissions based on 'IncludeInheritedPermissions' switch
-                If($IncludeInheritedPermissions)
-                {
+            # Loop through each folder
+            ForEach($Folder in $Folders) {
+                # Check permissions based on whether to include inherited permissions
+                If($IncludeInheritedPermissions) {
                     Get-PnPPermissions -Object $Folder
                 }
-                Else
-                {
-                    #Check if Folder has unique permissions
+                Else {
+                    # Check if folder has unique permissions
                     $HasUniquePermissions = Get-PnPProperty -ClientObject $Folder -Property HasUniqueRoleAssignments
-                    If($HasUniquePermissions -eq $True)
-                    {
-                        #Call the function to generate Permission report
+                    If($HasUniquePermissions -eq $True) {
                         Get-PnPPermissions -Object $Folder
                     }
                 }
                 $ItemCounter++
+                # Show progress
                 Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting permissions for items in '$($List.Title)'" -Status "Item: '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
             }
         }
-  
-        #Function to Get Permissions of all lists from the given web
-        Function Get-PnPListPermission([Microsoft.SharePoint.Client.Web]$Web)
-        {
-            #Get All Lists from the web
+
+        # Function to get permissions of all lists from the given web
+        Function Get-PnPListPermission([Microsoft.SharePoint.Client.Web]$Web) {
+            # Get all lists from the web
             $Lists = Get-PnPProperty -ClientObject $Web -Property Lists
-    
-            #Exclude system lists
-            $ExcludedLists = @("Access Requests","App Packages","appdata","appfiles","Apps in Testing","Cache Profiles","Composed Looks","Content and Structure Reports","Content type publishing error log","Converted Forms",
-            "Device Channels","Form Templates","fpdatasources","Get started with Apps for Office and SharePoint","List Template Gallery", "Long Running Operation Status","Maintenance Log Library", "Images", "site collection images"
-            ,"Master Docs","Master Page Gallery","MicroFeed","NintexFormXml","Quick Deploy Items","Relationships List","Reusable Content","Reporting Metadata", "Reporting Templates", "Search Config List","Site Assets","Preservation Hold Library",
-            "Site Pages", "Solution Gallery","Style Library","Suggested Content Browser Locations","Theme Gallery", "TaxonomyHiddenList","User Information List","Web Part Gallery","wfpub","wfsvc","Workflow History","Workflow Tasks", "Pages")
-              
+            # List of system lists to exclude
+            $ExcludedLists = @("Access Requests","App Packages","appdata","appfiles","Apps in Testing","Cache Profiles","Composed Looks","Content and Structure Reports","Content type publishing error log","Converted Forms","Device Channels","Form Templates","fpdatasources","Get started with Apps for Office and SharePoint","List Template Gallery", "Long Running Operation Status","Maintenance Log Library", "Images", "site collection images","Master Docs","Master Page Gallery","MicroFeed","NintexFormXml","Quick Deploy Items","Relationships List","Reusable Content","Reporting Metadata", "Reporting Templates", "Search Config List","Site Assets","Preservation Hold Library","Site Pages", "Solution Gallery","Style Library","Suggested Content Browser Locations","Theme Gallery", "TaxonomyHiddenList","User Information List","Web Part Gallery","wfpub","wfsvc","Workflow History","Workflow Tasks", "Pages")
             $Counter = 0
-            #Get all lists from the web  
-            ForEach($List in $Lists)
-            {
-                #Exclude System Lists
-                If($List.Hidden -eq $False -and $ExcludedLists -notcontains $List.Title)
-                {
+            # Loop through each list
+            ForEach($List in $Lists) {
+                # Check if the list should be included
+                If($List.Hidden -eq $False -and $ExcludedLists -notcontains $List.Title) {
                     $Counter++
+                    # Show progress
                     Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)'" -Status "List $Counter of $($Lists.Count)" -Id 1
-  
-                    #Get Item Level Permissions if 'ScanFolders' switch present
-                    If($ScanFolders)
-                    {
-                        #Get Folder Permissions
+                    # Check folder permissions if ScanFolders switch is present
+                    If($ScanFolders) {
                         Get-PnPFolderPermission -List $List
                     }
-  
-                    #Get Lists with Unique Permissions or Inherited Permissions based on 'IncludeInheritedPermissions' switch
-                    If($IncludeInheritedPermissions)
-                    {
+                    # Check list permissions based on whether to include inherited permissions
+                    If($IncludeInheritedPermissions) {
                         Get-PnPPermissions -Object $List
                     }
-                    Else
-                    {
-                        #Check if List has unique permissions
+                    Else {
+                        # Check if list has unique permissions
                         $HasUniquePermissions = Get-PnPProperty -ClientObject $List -Property HasUniqueRoleAssignments
-                        If($HasUniquePermissions -eq $True)
-                        {
-                            #Call the function to check permissions
+                        If($HasUniquePermissions -eq $True) {
                             Get-PnPPermissions -Object $List
                         }
                     }
                 }
             }
         }
-    
-        #Function to Get Webs's Permissions from given URL
-        Function Get-PnPWebPermission([Microsoft.SharePoint.Client.Web]$Web)
-        {
-            #Call the function to Get permissions of the web
+
+        # Function to get web's permissions from given URL
+        Function Get-PnPWebPermission([Microsoft.SharePoint.Client.Web]$Web) {
             Write-host -f Green "Getting Permissions for site."
+            # Get permissions of the web
             Get-PnPPermissions -Object $Web
-    
-            #Get List Permissions
             Write-host -f Green "Getting Permissions of Lists and Libraries."
+            # Get permissions of lists in the web
             Get-PnPListPermission($Web)
-  
-            #Recursively get permissions from all sub-webs based on the "Recursive" Switch
-            If($Recursive)
-            {
-                #Get Subwebs of the Web
+            # If Recursive switch is present, get permissions from all sub-webs
+            If($Recursive) {
+                # Get all sub-webs
                 $Subwebs = Get-PnPProperty -ClientObject $Web -Property Webs
-  
-                #Iterate through each subsite in the current web
-                Foreach ($Subweb in $web.Webs)
-                {
-                    #Get Webs with Unique Permissions or Inherited Permissions based on 'IncludeInheritedPermissions' switch
-                    If($IncludeInheritedPermissions)
-                    {
+                # Loop through each sub-web
+                Foreach ($Subweb in $web.Webs) {
+                    # Check permissions based on whether to include inherited permissions
+                    If($IncludeInheritedPermissions) {
                         Get-PnPWebPermission($Subweb)
                     }
-                    Else
-                    {
-                        #Check if the Web has unique permissions
+                    Else {
+                        # Check if sub-web has unique permissions
                         $HasUniquePermissions = Get-PnPProperty -ClientObject $SubWeb -Property HasUniqueRoleAssignments
-    
-                        #Get the Web's Permissions
-                        If($HasUniquePermissions -eq $true)
-                        {
-                            #Call the function recursively                           
+                        If($HasUniquePermissions -eq $true) {
                             Get-PnPWebPermission($Subweb)
                         }
                     }
                 }
             }
         }
-  
-        #Call the function with RootWeb to get site collection permissions
+
+        # Call the function with RootWeb to get site collection permissions
         Get-PnPWebPermission $Web
-    
         Write-host -f Green "`n*** Site Permission Report Generated Successfully!***"
-     }
+    }
     Catch {
         write-host -f Red "Error Generating Site Permission Report!" $_.Exception.Message
-   }
-   $EndTime = Get-Date
-   $diff= New-TimeSpan -Start $StartTime -End $EndTime
-Write-Output "Script Run Time: $diff"
+    }
+    # Calculate and output the total runtime of the script
+    $EndTime = Get-Date
+    $diff= New-TimeSpan -Start $StartTime -End $EndTime
+    Write-Output "Script Run Time: $diff"
 }
 
- 
+# Call the main function with specific parameters
 Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/Site" -Recursive -ScanFolders -IncludeInheritedPermissions
