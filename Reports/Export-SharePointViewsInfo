@@ -1,0 +1,69 @@
+function Export-SharePointViewsInfo {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$SiteUrl,
+        
+        [Parameter(Mandatory=$false)]
+        [string]$OutputPath = "SharePointViewsInfo.csv"
+    )
+
+    try {
+        # Connect to the SharePoint site
+        Connect-PnPOnline -Url $SiteUrl -Interactive
+
+        # Get the site name
+        $site = Get-PnPWeb
+        $siteName = $site.Title
+
+        # Initialize an array to store the results
+        $results = @()
+
+        # Get all lists and libraries
+        $lists = Get-PnPList
+
+        # Calculate total number of items to process (lists * views)
+        $totalItems = ($lists | ForEach-Object { (Get-PnPView -List $_).Count } | Measure-Object -Sum).Sum
+        $processedItems = 0
+
+        foreach ($list in $lists) {
+            # Get all views for the current list/library
+            $views = Get-PnPView -List $list
+
+            foreach ($view in $views) {
+                # Get the view settings URL
+                $viewSettingsUrl = "$SiteUrl/_layouts/15/listedit.aspx?List={$($list.Id)}&View={$($view.Id)}"
+
+                # Create a custom object with the required information
+                $resultObj = [PSCustomObject]@{
+                    SiteName = $siteName
+                    ListName = $list.Title
+                    ListUrl = $list.RootFolder.ServerRelativeUrl
+                    ViewName = $view.Title
+                    ViewSettingsUrl = $viewSettingsUrl
+                    IsMobileView = $view.MobileView
+                }
+
+                # Add the object to the results array
+                $results += $resultObj
+
+                # Update progress
+                $processedItems++
+                $percentComplete = [math]::Round(($processedItems / $totalItems) * 100, 2)
+                Write-Progress -Activity "Exporting SharePoint Views Info" -Status "$percentComplete% Complete" -PercentComplete $percentComplete
+            }
+        }
+
+        # Export the results to a CSV file
+        $results | Export-Csv -Path $OutputPath -NoTypeInformation
+
+        Write-Progress -Activity "Exporting SharePoint Views Info" -Completed
+        Write-Host "Export completed successfully. Results saved to: $OutputPath"
+    }
+    catch {
+        Write-Error "An error occurred: $_"
+    }
+    finally {
+        # Disconnect from the SharePoint site
+        Disconnect-PnPOnline
+    }
+}
