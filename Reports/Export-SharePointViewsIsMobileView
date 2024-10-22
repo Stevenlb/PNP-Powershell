@@ -54,7 +54,7 @@ function Export-SharePointViewsInfo {
         }
 
         # Export the results to a CSV file
-        $results | Export-Csv -Path $OutputPath -NoTypeInformation
+        $results | Export-Csv -Path $OutputPath -NoTypeInformation –Append
 
         Write-Progress -Activity "Exporting SharePoint Views Info" -Completed
         Write-Host "Export completed successfully. Results saved to: $OutputPath"
