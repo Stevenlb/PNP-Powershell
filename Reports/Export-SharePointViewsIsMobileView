@@ -9,7 +9,7 @@ function Export-SharePointViewsInfo {
 
     try {
         # Connect to the SharePoint site
-        Connect-PnPOnline -Url $SiteUrl -Interactive
+        Connect-PnPOnline -Url $SiteUrl -Useweb
 
         # Get the site name
         $site = Get-PnPWeb
@@ -67,3 +67,5 @@ function Export-SharePointViewsInfo {
         Disconnect-PnPOnline
     }
 }
+
+Export-SharePointViewsInfo -SiteUrl "https://tenantnamehere.sharepoint.com/sites/SiteNameHere/"
