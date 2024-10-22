@@ -29,10 +29,35 @@ function Update-ListView {
         }
 
         # Prepare the CAML query for filtering
-        $camlQuery = "<Where><Or><Eq><FieldRef Name='Status'/><Value Type='Choice'>In Progress</Value></Eq><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq></Or></Where>"
+        $camlQuery = @"
+<Where>
+  <And>
+    <Or>
+      <Eq>
+        <FieldRef Name='PrimeDocOwner'/>
+        <Value Type='Integer'><UserID/></Value>
+      </Eq>
+      <Eq>
+        <FieldRef Name='AssignedTo'/>
+        <Value Type='Integer'><UserID/></Value>
+      </Eq>
+    </Or>
+    <Or>
+      <Eq>
+        <FieldRef Name='Status'/>
+        <Value Type='Choice'>In Progress</Value>
+      </Eq>
+      <Eq>
+        <FieldRef Name='Status'/>
+        <Value Type='Choice'>Not Started</Value>
+      </Eq>
+    </Or>
+  </And>
+</Where>
+"@
 
         # Update the view
-        Set-PnPView -List $list -Identity $view -Fields "Title", "Status", "DueDate" -ViewQuery $camlQuery -OrderBy @{"DueDate" = $false} -Paged $true -RowLimit 30
+        Set-PnPView -List $list -Identity $view -Fields "Title", "PrimeDocOwner", "AssignedTo", "Status", "DueDate" -ViewQuery $camlQuery -OrderBy @{"DueDate" = $false} -Paged $true -RowLimit 30
 
         Write-Host "View '$ViewName' in list '$ListName' has been successfully updated." -ForegroundColor Green
     }
