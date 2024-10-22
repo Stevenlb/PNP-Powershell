@@ -1,4 +1,4 @@
-function Update-ListView {
+function Update-SharePointListView {
     param (
         [Parameter(Mandatory=$true)]
         [string]$SiteUrl,
@@ -30,34 +30,49 @@ function Update-ListView {
 
         # Prepare the CAML query for filtering
         $camlQuery = @"
-<Where>
-  <And>
-    <Or>
-      <Eq>
-        <FieldRef Name='PrimeDocOwner'/>
-        <Value Type='Integer'><UserID/></Value>
-      </Eq>
-      <Eq>
-        <FieldRef Name='AssignedTo'/>
-        <Value Type='Integer'><UserID/></Value>
-      </Eq>
-    </Or>
-    <Or>
-      <Eq>
-        <FieldRef Name='Status'/>
-        <Value Type='Choice'>In Progress</Value>
-      </Eq>
-      <Eq>
-        <FieldRef Name='Status'/>
-        <Value Type='Choice'>Not Started</Value>
-      </Eq>
-    </Or>
-  </And>
-</Where>
+<View>
+  <Query>
+    <Where>
+      <And>
+        <Or>
+          <Eq>
+            <FieldRef Name='PrimeDocOwner'/>
+            <Value Type='Integer'><UserID/></Value>
+          </Eq>
+          <Eq>
+            <FieldRef Name='AssignedTo'/>
+            <Value Type='Integer'><UserID/></Value>
+          </Eq>
+        </Or>
+        <Or>
+          <Eq>
+            <FieldRef Name='Status'/>
+            <Value Type='Choice'>In Progress</Value>
+          </Eq>
+          <Eq>
+            <FieldRef Name='Status'/>
+            <Value Type='Choice'>Not Started</Value>
+          </Eq>
+        </Or>
+      </And>
+    </Where>
+    <OrderBy>
+      <FieldRef Name='DueDate' Ascending='FALSE'/>
+    </OrderBy>
+  </Query>
+  <ViewFields>
+    <FieldRef Name='Title'/>
+    <FieldRef Name='PrimeDocOwner'/>
+    <FieldRef Name='AssignedTo'/>
+    <FieldRef Name='Status'/>
+    <FieldRef Name='DueDate'/>
+  </ViewFields>
+  <RowLimit>30</RowLimit>
+</View>
 "@
 
         # Update the view
-        Set-PnPView -List $list -Identity $view -Fields "Title", "PrimeDocOwner", "AssignedTo", "Status", "DueDate" -ViewQuery $camlQuery -OrderBy @{"DueDate" = $false} -Paged $true -RowLimit 30
+        Set-PnPView -List $list -Identity $view -Values @{ViewQuery = $camlQuery}
 
         Write-Host "View '$ViewName' in list '$ListName' has been successfully updated." -ForegroundColor Green
     }
