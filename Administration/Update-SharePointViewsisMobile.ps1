@@ -186,4 +186,4 @@ function Enable-SPOMobileViews {
 
 # Example usage:
  Enable-SPOMobileViews -SiteUrl "https://tenantnamehere.sharepoint.com/sites/SiteNameHere/"
-# Disable-SPOMobileViews -SiteUrl "https://contoso.sharepoint.com/sites/mysite" -IncludeSubsites
+# Disable-SPOMobileViews -SiteUrl "https://tenantnamehere.sharepoint.com/sites/SiteNameHere/" -IncludeSubsites
