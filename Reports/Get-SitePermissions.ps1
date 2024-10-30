@@ -109,7 +109,7 @@ Function Get-SitePermissions() {
     Try {
         $StartTime = Get-Date
         # Connect to the Site
-        Connect-PnPOnline -Url $SiteUrl -ClientId c6d631cb-09f6-42e6-bd44-ab4daafd7acd -Interactive
+        Connect-PnPOnline -Url $SiteUrl -ClientId xxxxxxxxxxxxxxxxxx -Interactive
 		
         # Get the Web object
         $Web = Get-PnPWeb
