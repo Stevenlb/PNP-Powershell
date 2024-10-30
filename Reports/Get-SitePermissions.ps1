@@ -253,4 +253,4 @@ Function Get-SitePermissions() {
 }
 
 # Execute the main function with specific parameters
-Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/PlanCP-QA-AHP" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/SiteName" -Recursive -ScanFolders -IncludeInheritedPermissions
