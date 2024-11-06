@@ -1,5 +1,11 @@
-# Load configuration from an external script file
-. .\config\scriptpaths.ps1
+# Generate a timestamp for the report file name
+$TimeStamp = Get-Date -Format "yyyyMMdd-HHmm"
+
+# Load Paths
+$ScriptPath = (Get-Location).Path
+$ScriptParent = $ScriptPath | Split-Path -Parent
+$ScriptGParent = $ScriptParent | Split-Path -Parent
+$Script2GParent = $ScriptGParent | Split-Path -Parent
 
 # Create a 'Reports' directory in the script path, force creation if it already exists
 New-Item -ItemType Directory -Force -Path "$ScriptPath\Reports\"
@@ -109,7 +115,7 @@ Function Get-SitePermissions() {
     Try {
         $StartTime = Get-Date
         # Connect to the Site
-        Connect-PnPOnline -Url $SiteUrl -ClientId xxxxxxxxxxxxxxxxxx -Interactive
+		C:\Users\ptc06047\Documents\PortableApps\Scripts\PS\Connect-PnPOnline.ps1
 		
         # Get the Web object
         $Web = Get-PnPWeb
@@ -252,5 +258,45 @@ Function Get-SitePermissions() {
     Write-Output "Script Run Time: $diff"
 }
 
+
+
 # Execute the main function with specific parameters
-Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/SiteName" -Recursive -ScanFolders -IncludeInheritedPermissions
+
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-ArchRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-AcqRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-bcbsms" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-BlueShieldCA" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-CapitalRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-Elixir" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-EmpiRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-IPM" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-LeafHealth" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-Liviniti" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-PHG" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2CP-Hub" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-Provdnc" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-AcqRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-qa-ArchRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-qa-bcbsms" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-BlueShieldCA" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-CapitalRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-Elixir/" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-EmpiRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-IPM" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-LeafHealth" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-Liviniti" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-PHG" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/QA-S2CP-Hub" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-Provdnc" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-RxParadigm" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-ScriptSave" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/ps2cp-sandbox" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/QA-S2-Client-Template" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-TruRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-QA-Vivio" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-RxParadigm" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-ScriptSave" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-TruRx" -Recursive -ScanFolders -IncludeInheritedPermissions
+Get-SitePermissions -SiteURL "https://ptportal.sharepoint.com/sites/S2-Vivio/" -Recursive -ScanFolders -IncludeInheritedPermissions
+
+
