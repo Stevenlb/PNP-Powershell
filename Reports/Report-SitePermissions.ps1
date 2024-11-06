@@ -17,7 +17,7 @@ $StartTime = Get-Date
 Write-Host "Script Start time is $StartTime"
 
 # Function to get permissions applied on a particular SharePoint object (Web, List, or Folder)
-Function Report-SitePermissions([Microsoft.SharePoint.Client.SecurableObject]$Object) {
+Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object) {
     # Determine the type of the object and set relevant properties
     Switch($Object.TypedObject.ToString()) {
         "Microsoft.SharePoint.Client.Web"  { $ObjectType = "Site" ; $ObjectURL = $Object.URL; $ObjectTitle = $Object.Title }
@@ -70,7 +70,7 @@ Function Report-SitePermissions([Microsoft.SharePoint.Client.SecurableObject]$Ob
                   
             # Skip empty groups
             If($GroupMembers.count -eq 0){Continue}
-            $GroupUsers = $GroupMembers | Select -ExpandProperty Title | Where { $_ -ne "System Account"}
+            $GroupUsers = ($GroupMembers | Select -ExpandProperty Title | Where { $_ -ne "System Account"}) -join "; "
             If($GroupUsers.Length -eq 0) {Continue}
  
             # Create a new object to store permission information for the group
@@ -115,7 +115,7 @@ Function Get-SitePermissions() {
     Try {
         $StartTime = Get-Date
         # Connect to the Site
-		Connect-PnPOnline -Url $SiteUrl
+        Connect-PnPOnline -Url $SiteUrl -ClientId xxxxxxxxxxxxxxxxxx -Interactive
 		
         # Get the Web object
         $Web = Get-PnPWeb
@@ -140,6 +140,7 @@ Function Get-SitePermissions() {
         $ReportFile = $SiteURL -replace "https://", "$ScriptPath\Reports\"
 		$ReportFile = $ReportFile -replace ".sharepoint.com", "-"
         $ReportFile = $ReportFile -replace "/sites/", "-"
+        $ReportFile = $ReportFile -replace "\-", "-"
         $ReportFile = "$ReportFile-Permissions-$TimeStamp.csv"
         # Export Site Collection Administrators information to the CSV file
         $Permissions | Export-CSV $ReportFile -NoTypeInformation
@@ -157,14 +158,14 @@ Function Get-SitePermissions() {
             ForEach($Folder in $Folders) {
                 # Get Objects with Unique Permissions or Inherited Permissions based on 'IncludeInheritedPermissions' switch
                 If($IncludeInheritedPermissions) {
-                    Report-SitePermissions -Object $Folder
+                    Get-PnPPermissions -Object $Folder
                 }
                 Else {
                     # Check if Folder has unique permissions
                     $HasUniquePermissions = Get-PnPProperty -ClientObject $Folder -Property HasUniqueRoleAssignments
                     If($HasUniquePermissions -eq $True) {
                         # Call the function to generate Permission report
-                        Report-SitePermissions -Object $Folder
+                        Get-PnPPermissions -Object $Folder
                     }
                 }
                 $ItemCounter++
@@ -196,14 +197,14 @@ Function Get-SitePermissions() {
   
                     # Get Lists with Unique Permissions or Inherited Permissions based on 'IncludeInheritedPermissions' switch
                     If($IncludeInheritedPermissions) {
-                        Report-SitePermissions -Object $List
+                        Get-PnPPermissions -Object $List
                     }
                     Else {
                         # Check if List has unique permissions
                         $HasUniquePermissions = Get-PnPProperty -ClientObject $List -Property HasUniqueRoleAssignments
                         If($HasUniquePermissions -eq $True) {
                             # Call the function to check permissions
-                            Report-SitePermissions -Object $List
+                            Get-PnPPermissions -Object $List
                         }
                     }
                 }
@@ -214,7 +215,7 @@ Function Get-SitePermissions() {
         Function Get-PnPWebPermission([Microsoft.SharePoint.Client.Web]$Web) {
             # Call the function to Get permissions of the web
             Write-host -f Green "Getting Permissions for site."
-            Report-SitePermissions -Object $Web
+            Get-PnPPermissions -Object $Web
     
             # Get List Permissions
             Write-host -f Green "Getting Permissions of Lists and Libraries."
@@ -258,8 +259,5 @@ Function Get-SitePermissions() {
     Write-Output "Script Run Time: $diff"
 }
 
-
-
-# Execute function
-
-Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/Site -Recursive -ScanFolders -IncludeInheritedPermissions
+# Execute the main function with specific parameters
+Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/SiteName" -Recursive -ScanFolders -IncludeInheritedPermissions
