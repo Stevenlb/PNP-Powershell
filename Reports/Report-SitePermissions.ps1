@@ -70,7 +70,7 @@ Function Report-SitePermissions([Microsoft.SharePoint.Client.SecurableObject]$Ob
                   
             # Skip empty groups
             If($GroupMembers.count -eq 0){Continue}
-            $GroupUsers = ($GroupMembers | Select -ExpandProperty Title | Where { $_ -ne "System Account"}) -join "; "
+            $GroupUsers = $GroupMembers | Select -ExpandProperty Title | Where { $_ -ne "System Account"}
             If($GroupUsers.Length -eq 0) {Continue}
  
             # Create a new object to store permission information for the group
@@ -115,7 +115,7 @@ Function Get-SitePermissions() {
     Try {
         $StartTime = Get-Date
         # Connect to the Site
-		C:\Users\ptc06047\Documents\PortableApps\Scripts\PS\Connect-PnPOnline.ps1
+		Connect-PnPOnline -Url $SiteUrl
 		
         # Get the Web object
         $Web = Get-PnPWeb
@@ -136,11 +136,11 @@ Function Get-SitePermissions() {
         $Permissions | Add-Member NoteProperty Permissions("Site Owner")
         $Permissions | Add-Member NoteProperty GrantedThrough("Direct Permissions")
 		
-        # Generate a timestamp for the report file name
-        $TimeStamp = Get-Date -Format "yyyyMMdd-HHmm"
-        $ReportFile = $SiteURL -replace "https://ptportal.sharepoint.com/sites/", "$ScriptPath\Reports\"
-        $ReportFile = $ReportFile -replace "/", ""
-        $ReportFile = "$ReportFile-Permissions=$TimeStamp.csv"
+        # Generate  report file name
+        $ReportFile = $SiteURL -replace "https://", "$ScriptPath\Reports\"
+		$ReportFile = $ReportFile -replace ".sharepoint.com", "-"
+        $ReportFile = $ReportFile -replace "/sites/", "-"
+        $ReportFile = "$ReportFile-Permissions-$TimeStamp.csv"
         # Export Site Collection Administrators information to the CSV file
         $Permissions | Export-CSV $ReportFile -NoTypeInformation
 
@@ -168,7 +168,7 @@ Function Get-SitePermissions() {
                     }
                 }
                 $ItemCounter++
-                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "Getting permissions for items in '$($List.Title)'" -Status "Item: '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
+                Write-Progress -PercentComplete ($ItemCounter / ($Folders.Count) * 100) -Activity "$Web.Title : '$($List.Title)'" -Status "Item: '$($Folder.FieldValues.FileLeafRef)' at '$($Folder.FieldValues.FileRef)' ($ItemCounter of $($Folders.Count))" -Id 2 -ParentId 1
             }
         }
   
@@ -186,7 +186,7 @@ Function Get-SitePermissions() {
                 # Exclude System Lists
                 If($List.Hidden -eq $False -and $ExcludedLists -notcontains $List.Title) {
                     $Counter++
-                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "Current list: '$($List.Title)'" -Status "List $Counter of $($Lists.Count)" -Id 1
+                    Write-Progress -PercentComplete ($Counter / ($Lists.Count) * 100) -Activity "$($Web.Title) > '$($List.Title)'" -Status "List $Counter of $($Lists.Count)" -Id 1
   
                     # Get Item Level Permissions if 'ScanFolders' switch present
                     If($ScanFolders) {
@@ -258,5 +258,8 @@ Function Get-SitePermissions() {
     Write-Output "Script Run Time: $diff"
 }
 
-# Execute the main function with specific parameters
-Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/SiteName" -Recursive -ScanFolders -IncludeInheritedPermissions
+
+
+# Execute function
+
+Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/Site -Recursive -ScanFolders -IncludeInheritedPermissions
