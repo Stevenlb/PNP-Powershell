@@ -104,7 +104,7 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
 }
     
 # Function to get SharePoint Online site permissions report
-Function Get-SitePermissions() {
+Function Report-SitePermissions() {
     [cmdletbinding()]
     Param (   
         [Parameter(Mandatory=$false)] [String] $SiteURL,     
@@ -260,4 +260,4 @@ Function Get-SitePermissions() {
 }
 
 # Execute the main function with specific parameters
-Get-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/SiteName" -Recursive -ScanFolders -IncludeInheritedPermissions
+Report-SitePermissions -SiteURL "https://tenantnamehere.sharepoint.com/sites/Site" -Recursive -ScanFolders -IncludeInheritedPermissions
